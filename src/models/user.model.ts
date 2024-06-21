@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Document } from "mongoose";
 import { MailStatus, UserType } from "../types/user.type";
 
 const UserSchema = new Schema(
@@ -22,5 +22,21 @@ const UserSchema = new Schema(
   { timestamps: true }
 );
 
+UserSchema.pre("save", async function (next) {
+  const existingLinkedMail = this.linkedMails.find(
+    (lm) => lm.mail === this.mail
+  );
+
+  if (!existingLinkedMail) {
+    this.linkedMails.push({
+      mail: this.mail,
+      status: MailStatus.CONFIRMED,
+    });
+  }
+
+  next();
+});
+
 const User = mongoose.model<UserType>("User", UserSchema);
+
 export default User;

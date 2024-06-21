@@ -120,3 +120,18 @@ export async function login(req: Request, res: Response) {
     res.status(500).json({ message: "Ошибка сервера" });
   }
 }
+export async function getMe(req: Request, res: Response) {
+  const userId = req.user?._id;
+  try {
+    const user = await User.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "Пользователь не найден" });
+    }
+    res
+      .status(200)
+      .json({ message: "Данные пользователя успешно получены.", user });
+  } catch (error) {
+    console.error("Ошибка при получение пользователя:", error);
+    res.status(500).json({ message: "Ошибка сервера" });
+  }
+}
