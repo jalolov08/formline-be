@@ -5,6 +5,7 @@ import {
   createForm,
   deleteForm,
   editForm,
+  exportForm,
   myForms,
 } from "../controllers/form.controller";
 import {
@@ -30,3 +31,4 @@ formRouter.delete(
   checkVerified,
   deleteApplications
 );
+formRouter.get("/:trackId/export", checkAuth, checkVerified, exportForm);

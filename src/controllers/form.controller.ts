@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import Form from "../models/form.model";
 import User from "../models/user.model";
+import Application from "../models/application.model";
+import fs from "fs";
+import json2csv from "json2csv";
 export async function createForm(req: Request, res: Response) {
   const userId = req.user?._id;
   const { name, targetMail } = req.body;
@@ -131,5 +134,62 @@ export async function deleteForm(req: Request, res: Response) {
   } catch (error) {
     console.error("Ошибка при удаление формы:", error);
     res.status(500).json({ message: "Ошибка сервера" });
+  }
+}
+export async function exportForm(req: Request, res: Response) {
+  const userId = req.user?._id;
+  const { trackId } = req.params;
+  const { type } = req.query;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Пользователь не найден" });
+    }
+
+    const form = await Form.findOne({ trackId });
+    if (!form) {
+      return res.status(404).json({ message: "Форма не найдена" });
+    }
+    if (form.owner !== userId) {
+      return res.status(403).json({
+        message: "Вы не авторизованы для удаления заявок этой формы",
+      });
+    }
+
+    const applications = await Application.find({ formTrackId: trackId });
+
+    if (type === "json") {
+      const jsonFileName = `applications_${trackId}.json`;
+      const jsonData = JSON.stringify(applications, null, 2);
+      fs.writeFileSync(jsonFileName, jsonData);
+      res.download(jsonFileName, jsonFileName, (err) => {
+        if (err) {
+          console.error("Ошибка при отправке файла JSON:", err);
+          res.status(500).json({ message: "Ошибка при отправке файла JSON" });
+        } else {
+          fs.unlinkSync(jsonFileName);
+        }
+      });
+    } else if (type === "csv") {
+      const fields = form.fields.map((field) => `fields.${field}`);
+      const csv = json2csv.parse(applications, { fields });
+      const csvFileName = `applications_${trackId}.csv`;
+      fs.writeFileSync(csvFileName, csv);
+
+      res.download(csvFileName, csvFileName, (err) => {
+        if (err) {
+          console.error("Ошибка при отправке файла CSV:", err);
+          res.status(500).json({ message: "Ошибка при отправке файла CSV" });
+        } else {
+          fs.unlinkSync(csvFileName);
+        }
+      });
+    } else {
+      res.status(400).json({ message: "Неподдерживаемый формат экспорта" });
+    }
+  } catch (error) {
+    console.error("Ошибка при экспорте заявок:", error);
+    res.status(500).json({ message: "Произошла ошибка при экспорте заявок" });
   }
 }
