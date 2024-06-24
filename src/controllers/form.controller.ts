@@ -73,12 +73,14 @@ export async function editForm(req: Request, res: Response) {
         .status(403)
         .json({ message: "Вы не авторизованы для изменения этой формы" });
     }
-    const linkedMail = user.linkedMails.find((lm) => lm.mail === targetMail);
+    if (typeof targetMail !== "undefined") {
+      const linkedMail = user.linkedMails.find((lm) => lm.mail === targetMail);
 
-    if (!linkedMail) {
-      return res.status(400).json({
-        message: "Целевой адрес почты должен быть одним из связанных адресов",
-      });
+      if (!linkedMail) {
+        return res.status(400).json({
+          message: "Целевой адрес почты должен быть одним из связанных адресов",
+        });
+      }
     }
     if (name) {
       form.name = name;
@@ -105,7 +107,6 @@ export async function editForm(req: Request, res: Response) {
     res.status(500).json({ message: "Ошибка сервера" });
   }
 }
-
 export async function deleteForm(req: Request, res: Response) {
   const userId = req.user?._id;
   const { formId } = req.params;

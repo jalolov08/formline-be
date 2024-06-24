@@ -4,4 +4,4 @@ import { formRouter } from "./form.route";
 
 export const router = express.Router();
 router.use("/user", userRouter);
-router.use("/form" , formRouter)
+router.use("/form", formRouter);
